@@ -22,3 +22,6 @@ Run the script main_barrier_options_pricing.m in the /code folder.
 ## Structure
 /code: pricing implementations  
 /results: plots and outputs
+
+### Vega of the KO Option
+![Vega KO](results/vega_ko.png)

@@ -1,5 +1,4 @@
 % =========================================================================
-%  RUN_BARRIER_OPTIONS_PRICING.m
 %
 %  Pricing and Greeks analysis of European and American Barrier Options
 %  using Closed-Form, CRR Binomial Tree, and Monte Carlo methods.

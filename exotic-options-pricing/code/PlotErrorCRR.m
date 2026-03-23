@@ -49,7 +49,7 @@ function [M, errorCRR] = PlotErrorCRR(F0, K, B, T, sigma)
     ylabel('Absolute Error');
     legend('CRR Error', 'O(1/M) Reference', '1/2 bp Tolerance');
     grid on;
-    
+
     % Console Output for M selection
     valid_idx = find(errorCRR <= bp, 1);
     fprintf('\n--- CRR ERROR ANALYSIS ---\n');

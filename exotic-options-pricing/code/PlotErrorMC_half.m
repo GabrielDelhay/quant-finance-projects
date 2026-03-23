@@ -50,4 +50,5 @@ function [M_half, stdEstim] = PlotErrorMC_half(F0, K, B, T, sigma)
     ylabel('Standard Error');
     legend('MC Standard Error', '1/sqrt(M) Reference', '1/2 bp Tolerance', 'MC Antithetic error', 'Location', 'best');
     grid on;
+
 end

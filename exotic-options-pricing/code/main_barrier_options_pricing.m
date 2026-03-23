@@ -173,15 +173,9 @@ grid on;
 
 fprintf('\n--- Antithetic Variables Variance Reduction ---\n');
 
-figure;
-[M_vec,      stdEstim]      = PlotErrorMC(F0, K, B, TTM, sigma);
-hold on;
+[M_vec, stdEstim] = PlotErrorMC(F0, K, B, TTM, sigma);
+hold on 
 [M_vec_half, stdEstim_half] = PlotErrorMC_half(F0, K, B, TTM, sigma);
-legend('Standard MC', 'Antithetic Variables', 'Location', 'best');
-title('MC Std. Error: Standard vs. Antithetic Variables');
-xlabel('Number of Simulations M');
-ylabel('Std. Error of Estimator');
-grid on;
 
 %% -------------------------------------------------------------------------
 %  8. BERMUDAN OPTION PRICING

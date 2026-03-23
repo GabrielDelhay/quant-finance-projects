@@ -55,7 +55,7 @@ function [M_vec, stdEstim] = PlotErrorMC(F0, K, B, T, sigma)
     ylabel('Standard Error');
     legend('MC Standard Error', '1/sqrt(M) Reference');
     grid on;
-    
+
     % M Selection
     % Find first M below tolerance (ignoring zero results at start)
     idx = find(stdEstim <= bp & stdEstim > 0, 1, 'first');

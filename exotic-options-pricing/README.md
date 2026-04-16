@@ -4,7 +4,7 @@
 This project focuses on pricing European and exotic options using different numerical methods.
 
 ## Methods
-- Black-Scholes model
+- Black model
 - CRR binomial tree
 - Monte Carlo simulation
 

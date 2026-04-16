@@ -6,7 +6,7 @@ Interested in derivatives pricing, stochastic modelling, and numerical methods.
 
 ## Projects
 ### Exotic Options Pricing (Matlab)
-Black model
+Black model.
 Monte Carlo and tree-based methods for pricing European and barrier options.  
 Focus on convergence analysis and Greeks.
 

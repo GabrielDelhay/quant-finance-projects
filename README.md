@@ -8,8 +8,6 @@ Interested in derivatives pricing, stochastic modelling, and numerical methods.
 ### Exotic Options Pricing (Matlab)
 Monte Carlo and tree-based methods for pricing European and barrier options.  
 Focus on convergence analysis and Greeks.
-### Interest Rate Derivatives & Hedging (Python)
-Yield curve construction, IRS and swaption pricing, and hedging strategies using DV01.
 
 ## Contact
 [delhay.gabriel@gmail.com](mailto:delhay.gabriel@gmail.com) · [github.com/GabrielDelhay](https://github.com/GabrielDelhay)

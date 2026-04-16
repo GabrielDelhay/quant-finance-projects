@@ -10,7 +10,8 @@ This project focuses on pricing European and exotic options using different nume
 
 ## Products
 - European Call Option
-- Barrier Options (Up-and-Out)
+- Barrier Option (Up-and-Out)
+- Bermudan Option
 
 ## Results
 - Convergence of CRR and Monte Carlo methods

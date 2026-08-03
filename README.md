@@ -10,7 +10,7 @@ Interested in derivatives pricing, stochastic modelling, and numerical methods.
 Covariance estimation (shrinkage, PCA denoising) and a full replication of the Avellaneda & Lee PCA-based statistical arbitrage strategy on the EURO STOXX 50 universe.
 Rolling out-of-sample backtests, transaction costs, and threshold/factor-count sensitivity analysis.
 
-### [Exotic Options Pricing] (Matlab)
+### Exotic Options Pricing (Matlab)
 Black model.
 Monte Carlo and tree-based methods for pricing European and barrier options.  
 Focus on convergence analysis and Greeks.

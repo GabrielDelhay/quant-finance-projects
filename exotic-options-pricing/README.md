@@ -4,13 +4,14 @@
 This project focuses on pricing European and exotic options using different numerical methods.
 
 ## Methods
-- Black-Scholes model
+- Black model
 - CRR binomial tree
 - Monte Carlo simulation
 
 ## Products
 - European Call Option
-- Barrier Options (Up-and-Out)
+- Barrier Option (Up-and-Out)
+- Bermudan Option
 
 ## Results
 - Convergence of CRR and Monte Carlo methods

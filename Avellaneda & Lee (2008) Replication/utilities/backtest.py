@@ -8,6 +8,10 @@ def _align_portfolios_and_returns(
     """
     Align a portfolio schedule with the return matrix on the common investable universe.
 
+    A signal computed on day t's close cannot be traded at that same close: the order is
+    placed on t+1 and filled on t+2. Positions are lagged by two trading days to reflect
+    that, so the return earned on day t comes from a decision made using data through t-2.
+
     Parameters:
         portfolios (pd.DataFrame): Portfolio weights indexed by rebalance date.
         returns (pd.DataFrame): Asset returns indexed by trading date.
@@ -25,19 +29,25 @@ def _align_portfolios_and_returns(
     aligned_portfolios = (
         portfolios.loc[:, overlapping_assets]
         .reindex(returns.index)
-        .ffill()     # MISTAKE: carry forward the most recent portfolio until the next rebalance date
-        .shift()
+        .ffill()
+        .shift(2)
         .dropna(axis=0, how="all")
     )
     if aligned_portfolios.empty:
-        raise ValueError("portfolios and returns must overlap on at least one investable date")
+        raise ValueError(
+            "portfolios and returns must overlap on at least one investable date"
+        )
 
     aligned_returns = returns.loc[aligned_portfolios.index, overlapping_assets]
 
     return aligned_portfolios.fillna(0.0), aligned_returns
 
 
-def portfolio_returns(portfolios: pd.DataFrame, returns: pd.DataFrame) -> pd.Series:
+def portfolio_returns(
+    portfolios: pd.DataFrame,
+    returns: pd.DataFrame,
+    transaction_costs: float = 0.0,
+) -> pd.Series:
     """
     Compute the time series of realized portfolio returns from a rebalance schedule.
 
@@ -45,6 +55,8 @@ def portfolio_returns(portfolios: pd.DataFrame, returns: pd.DataFrame) -> pd.Ser
         portfolios (pd.DataFrame): DataFrame where each column represents the weights of a
             portfolio over time (dates as index).
         returns (pd.DataFrame): DataFrame of asset returns (dates as index, assets as columns).
+        transaction_costs (float): All-in transaction cost rate applied to one-way turnover
+            (e.g. 0.001 = 10 bps). Defaults to 0.0.
 
     Returns:
         pd.Series: Series of realized portfolio returns over time.
@@ -54,10 +66,24 @@ def portfolio_returns(portfolios: pd.DataFrame, returns: pd.DataFrame) -> pd.Ser
         returns=returns,
     )
 
-    return aligned_portfolios.multiply(aligned_returns).sum(axis=1)
+    gross_returns = aligned_portfolios.multiply(aligned_returns).sum(axis=1)
+
+    if transaction_costs != 0.0:
+        # w(t-1) = 0 on day one: the portfolio opens from cash, so the full
+        # initial gross book is real turnover and must be charged.
+        prev_weights = aligned_portfolios.shift(1).fillna(0.0)
+        turnover = (aligned_portfolios - prev_weights).abs().sum(axis=1)
+        gross_returns -= turnover * transaction_costs
 
 
-def backtest(portfolios: pd.DataFrame, returns: pd.DataFrame) -> pd.Series:
+    return gross_returns
+
+
+def backtest(
+    portfolios: pd.DataFrame,
+    returns: pd.DataFrame,
+    transaction_costs: float = 0.0,
+) -> pd.Series:
     """
     Compute cumulative portfolio performance from a rebalance schedule.
 
@@ -65,12 +91,18 @@ def backtest(portfolios: pd.DataFrame, returns: pd.DataFrame) -> pd.Series:
         portfolios (pd.DataFrame): DataFrame where each column represents the weights of a
             portfolio over time (dates as index).
         returns (pd.DataFrame): DataFrame of asset returns (dates as index, assets as columns).
+        transaction_costs (float): All-in transaction cost rate applied to one-way turnover
+            (e.g. 0.001 = 10 bps). Defaults to 0.0.
 
     Returns:
         pd.Series: Series representing the cumulative returns of the portfolios over time.
     """
     return (
-        portfolio_returns(portfolios=portfolios, returns=returns)
+        portfolio_returns(
+            portfolios=portfolios,
+            returns=returns,
+            transaction_costs=transaction_costs,
+        )
         .add(1)
         .cumprod()
     )

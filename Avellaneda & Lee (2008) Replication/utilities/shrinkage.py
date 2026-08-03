@@ -32,7 +32,7 @@ def constant_corr_shrinkage(
 
     # Extract standard deviations 
     variances = np.diag(S)
-    std_devs = np.sqrt(variances) # There was a mistake: missing sqrt()
+    std_devs = np.sqrt(variances)
 
     # Compute correlation matrix from covariance matrix
     std_outer = np.outer(std_devs, std_devs)
@@ -82,7 +82,7 @@ def constant_corr_shrinkage(
     # Calculate optimal shrinkage intensity
     # k = (pi - rho) / gamma, but we need to be careful about numerical stability
     numerator = pi_hat - rho_hat
-    denominator = T * gamma_hat   # There was a mistake: missing factor T in the denominator!!
+    denominator = T * gamma_hat
 
     if denominator == 0:
         intensity = 0.0
@@ -126,7 +126,7 @@ def market_factor_shrinkage(
 
     ## Target
     # Calculate market variance
-    market_variance = market_aligned.var()    #changed .std with .var --> now it retunrs the Var 
+    market_variance = market_aligned.var()
 
     # Calculate betas for all assets (vectorized)
     returns_np = returns_aligned.values
@@ -137,11 +137,11 @@ def market_factor_shrinkage(
     combined = np.column_stack([returns_np, market_np])
     cov_matrix_full = np.cov(combined.T)
     cov_with_market = cov_matrix_full[:-1, -1]  # Covariances of each asset with market
-    betas = cov_with_market / market_variance  # !!! COMPLETE AS APPROPRIATE !!!
+    betas = cov_with_market / market_variance
 
     # Calculate residual variances: Var(asset) - β² * Var(market) (vectorized)
-    asset_variances = np.diag(cov_matrix_full[:-1, :-1]) # !!! COMPLETE AS APPROPRIATE !!!
-    residual_variances = asset_variances - betas**2 * market_variance  # !!! COMPLETE AS APPROPRIATE !!!
+    asset_variances = np.diag(cov_matrix_full[:-1, :-1])
+    residual_variances = asset_variances - betas**2 * market_variance
 
     # Ensure residual variances are positive (vectorized)
     residual_variances = np.maximum(residual_variances, 1e-8)
@@ -177,10 +177,10 @@ def market_factor_shrinkage(
     for t in range(T):
         y_t = centered_returns[t, :]
         outer_prod = np.outer(y_t, y_t)
-        diff = outer_prod - S   # MISTAKE: THERE WAS A + SIGN BEFORE
+        diff = outer_prod - S
 
         # Pi-hat calculation
-        pi_hat += np.sum(diff**2)   # MISTAKE: before it wasn't accumulationg but changing value each time
+        pi_hat += np.sum(diff**2)
 
         # Rho-hat calculation
         m_t = market_centered_returns[t]
@@ -204,7 +204,7 @@ def market_factor_shrinkage(
         rho_hat += np.sum(off_diag_term)
 
     rho_hat /= T
-    pi_hat /= T   # MISTAKE: before it wasn't averaging over T
+    pi_hat /= T
 
     # Calculate gamma-hat: ||F - S||^2 where F is the target matrix
     gamma_hat = np.sum((target_np - S) ** 2)

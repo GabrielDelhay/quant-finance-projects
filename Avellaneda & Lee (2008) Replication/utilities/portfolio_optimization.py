@@ -18,8 +18,8 @@ from utilities.covariance_utilities import (
 def minimum_variance_portfolio(cov_matrix: np.ndarray) -> np.ndarray:
     """
     Calculate the minimum variance portfolio weights given a covariance matrix.
-    In particular the weights are given by: (pay attention: the following formula has to be written with the invese ov matrix)
-    w = (Σ * 1) / (1^T * Σ * 1), i.e. the solution of the optimization problem: 
+    In particular the weights are given by:
+    w = (Σ⁻¹ * 1) / (1^T * Σ⁻¹ * 1), i.e. the solution of the optimization problem:
     min_w w^T * Σ * w, subject to 1^T * w = 1.
 
     Parameters:
@@ -38,12 +38,12 @@ def minimum_variance_portfolio(cov_matrix: np.ndarray) -> np.ndarray:
     )
 
     n = cov_matrix.shape[0]
-    ones_vec = np.ones((n, 1))
+    ones_vec = np.ones(n)
 
-    min_var_ptf_numerator = np.linalg.inv(cov_matrix) @ ones_vec
-    min_var_ptf_weights = min_var_ptf_numerator / (ones_vec.T @ np.linalg.inv(cov_matrix) @ ones_vec)
+    inv_cov_ones = np.linalg.solve(cov_matrix, ones_vec)
+    min_var_ptf_weights = inv_cov_ones / (ones_vec @ inv_cov_ones)
 
-    return min_var_ptf_weights.flatten()
+    return min_var_ptf_weights
 
 
 def mean_variance_portfolio(
@@ -114,7 +114,6 @@ def mean_variance_portfolio(
     mean_var_ptf_weights = (A / risk_aversion) * (inv_cov_mu / A) + (1 - A / risk_aversion) * (inv_cov_ones / C)
     return mean_var_ptf_weights.flatten()
 
-# add a bisection funciotn in order to get to the right gamma
 def bisection(f, a, b, tol=1e-6, max_iter=100):
     """
     Finds a root of the function f in the interval [a, b] using the bisection method.

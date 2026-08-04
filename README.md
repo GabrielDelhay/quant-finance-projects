@@ -13,7 +13,7 @@ Rolling out-of-sample backtests, transaction costs, and threshold/factor-count s
 ### [Risk-Based Allocation Strategies](Covariance%20Estimation%2C%20Factor%20Models%20%26%20Risk-Based%20Allocation) (Python)
 Equal Risk Contribution and Hierarchical Risk Parity on the EURO STOXX 50 universe: correlation-distance clustering, market-mode detoning, cluster stability via the Rand index, and a head-to-head comparison of turnover and transaction-cost drag between the two allocators.
 
-### [Implied Volatility Surface — Variance Risk Premium](Implied%20Volatility%20Surface%20%E2%80%94%20Forecasting%20%26%20Factor%20Structure) (Python)
+### [Implied Volatility Surface - Forecasting & Factor Structure](Implied%20Volatility%20Surface%20%E2%80%94%20Forecasting%20%26%20Factor%20Structure) (Python)
 Builds the S&P 500 implied volatility surface from raw daily options chains (Black-Scholes inversion, smile/skew/convexity, constant-maturity ATM IV) and tests whether it predicts future realized variance, benchmarking IV-surface regression models (Newey-West HAC) against pure time-series baselines (historical mean, HAR, EGARCH).
 
 ### Exotic Options Pricing (Matlab)

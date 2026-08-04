@@ -26,6 +26,8 @@ def implied_vol(mkt_price, S, K, T, r, opt_type='C'):
         return np.nan
     if opt_type == 'C' and mkt_price >= S:
         return np.nan
+    if opt_type == 'P' and mkt_price >= K * np.exp(-r * T):
+        return np.nan
     try:
         return brentq(
             lambda s: bs_price(S, K, T, r, s, opt_type) - mkt_price,

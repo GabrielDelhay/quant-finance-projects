@@ -1,0 +1,272 @@
+"""
+Portfolio optimization utilities.
+
+Implements:
+- Minimum variance portfolio (closed-form solution)
+- Mean-variance portfolio (closed-form solution)
+- Equal risk contribution portfolio (optimization-based)
+
+References:
+- Maillard, S., Roncalli, T., & Teïletche, J. (2010).
+  "The properties of equally weighted risk contribution portfolios."
+- Markowitz, H. (1952). "Portfolio Selection." The Journal of Finance.
+"""
+
+import warnings
+from typing import Any
+import numpy as np
+from scipy.optimize import minimize
+from utilities.covariance_utilities import (
+    _validate_covariance_matrix,
+    risk_contribution,
+)
+
+
+def minimum_variance_portfolio(cov_matrix: np.ndarray) -> np.ndarray:
+    """
+    Calculate the minimum variance portfolio weights given a covariance matrix.
+    In particular the weights are given by:
+    w = (Σ⁻¹ * 1) / (1^T * Σ⁻¹ * 1), i.e. the solution of the optimization problem:
+    min_w w^T * Σ * w, subject to 1^T * w = 1.
+
+    Parameters:
+        cov_matrix (np.ndarray): Covariance matrix of asset returns.
+
+    Returns:
+        np.ndarray: Weights of the minimum variance portfolio.
+    """
+    cov_matrix = _validate_covariance_matrix(
+        cov_matrix,
+        name="cov_matrix",
+        require_positive_definite=True,
+        positive_definite_message=(
+            "cov_matrix must be positive definite (symmetric with positive eigenvalues)"
+        ),
+    )
+
+    n = cov_matrix.shape[0]
+    ones_vec = np.ones(n)
+
+    inv_cov_ones = np.linalg.solve(cov_matrix, ones_vec)
+    min_var_ptf_weights = inv_cov_ones / (ones_vec @ inv_cov_ones)
+
+    return min_var_ptf_weights
+
+
+
+
+def mean_variance_portfolio(
+    expected_returns: np.ndarray,
+    cov_matrix: np.ndarray,
+    risk_aversion: float = 1.0,
+) -> np.ndarray:
+    """
+    Calculate the classic mean-variance portfolio weights given expected returns and a
+    covariance matrix.
+
+    In particular the weights solve:
+    max_w mu^T * w - (gamma / 2) * w^T * Sigma * w, subject to 1^T * w = 1,
+    where mu are the expected returns and gamma is the risk-aversion parameter.
+
+    Parameters:
+        expected_returns (np.ndarray): Expected returns vector.
+        cov_matrix (np.ndarray): Covariance matrix of asset returns.
+        risk_aversion (float): Risk-aversion parameter gamma. Must be strictly positive.
+
+    Returns:
+        np.ndarray: Weights of the mean-variance portfolio.
+    """
+    cov_matrix = _validate_covariance_matrix(
+        cov_matrix,
+        name="cov_matrix",
+        require_positive_definite=True,
+        positive_definite_message=(
+            "cov_matrix must be positive definite (symmetric with positive eigenvalues)"
+        ),
+    )
+
+    expected_returns = np.asarray(expected_returns, dtype=float)
+    if expected_returns.ndim == 2 and 1 in expected_returns.shape:
+        expected_returns = expected_returns.reshape(-1)
+    elif expected_returns.ndim != 1:
+        raise ValueError(
+            "expected_returns must be one-dimensional or a single-column vector"
+        )
+
+    if expected_returns.shape[0] != cov_matrix.shape[0]:
+        raise ValueError(
+            "expected_returns and cov_matrix must refer to the same number of assets, "
+            f"got {expected_returns.shape[0]} and {cov_matrix.shape[0]}"
+        )
+
+    if not np.isfinite(expected_returns).all():
+        raise ValueError("expected_returns contains NaN or Inf values")
+
+    if not np.isfinite(risk_aversion):
+        raise ValueError("risk_aversion must be finite")
+
+    if risk_aversion <= 0:
+        raise ValueError(
+            f"risk_aversion must be strictly positive, got {risk_aversion}"
+        )
+    n = cov_matrix.shape[0]
+    ones_vec = np.ones(n)
+
+    # Σ⁻¹μ e Σ⁻¹1
+    inv_cov_mu = np.linalg.solve(cov_matrix, expected_returns)
+    inv_cov_ones = np.linalg.solve(cov_matrix, ones_vec)
+
+    A = ones_vec @ inv_cov_mu      # 1ᵀ Σ⁻¹ μ
+    C = ones_vec @ inv_cov_ones    # 1ᵀ Σ⁻¹ 1
+
+    # a* = (A/γ) · (Σ⁻¹μ / A) + (1 - A/γ) · (Σ⁻¹1 / C)
+    mean_var_ptf_weights = (A / risk_aversion) * (inv_cov_mu / A) + (1 - A / risk_aversion) * (inv_cov_ones / C)
+    return mean_var_ptf_weights.flatten()
+
+
+def inverse_volatility_portfolio(covariance: np.ndarray) -> np.ndarray:
+    """
+    Compute the inverse-volatility (naive risk-parity) portfolio.
+
+    Each weight is proportional to the inverse of the asset's volatility,
+    ``w_i ∝ 1 / sigma_i``, with ``sum_i w_i = 1``. Lab notes Question 2 shows
+    that this coincides with the ERC solution when the assets are uncorrelated.
+
+    Parameters:
+        covariance (np.ndarray): Covariance matrix of asset returns. Only the
+            diagonal is used.
+
+    Returns:
+        np.ndarray: Inverse-volatility weights summing to 1.
+    """
+
+    cov_matrix = _validate_covariance_matrix(
+        covariance,
+        name="covariance",
+        require_positive_definite=False,
+        positive_definite_message=(
+            "covariance must be positive definite (symmetric with positive eigenvalues)"                    
+        ),
+    )
+    volatilities = np.sqrt(np.diag(cov_matrix))
+    inv_vol_weights = 1 / volatilities
+    inv_vol_weights /= inv_vol_weights.sum()
+    
+    return inv_vol_weights
+
+
+
+
+
+
+def erc_objective_function(weights: np.ndarray, covariance: np.ndarray) -> float:
+    """
+    Equal risk contribution objective function: sum of squared pairwise differences
+    between normalized risk contributions. Numerically better conditioned than the
+    Maillard (2010) formulation on heterogeneous universes (daily returns).
+
+    Parameters:
+        weights (np.ndarray): Portfolio weights.
+        covariance (np.ndarray): Covariance matrix of asset returns.
+
+    Returns:
+        float: Objective function value.
+    """
+    port_var = weights @ covariance @ weights
+    rc = np.multiply(weights, covariance @ weights) / port_var  # normalized, order ~1/N
+    return np.sum((rc[:, None] - rc[None, :]) ** 2)
+
+
+def equal_risk_contribution_portfolio(
+    covariance: np.ndarray,
+    initial_solution: np.ndarray | None = None,
+    options: dict[str, Any] | None = None,
+    pcr_tolerance: float = 0.001,
+    ignore_objective: bool = False,
+) -> np.ndarray:
+    """
+    Calculate the equal risk contribution portfolio.
+
+    Parameters:
+        covariance (np.ndarray): Covariance matrix of assets, must be positive definite.
+        initial_solution (np.ndarray | None): Initial solution guess, default to
+            None, i.e. to the inverse volatility portfolio.
+        options (Dict[str, Any] | None): A dictionary of solver options, see
+            scipy.optimize.minimize.
+        pcr_tolerance (float): The max allowable tolerance for differences in the percentage
+            contribution to risk (pcr) coming from different assets, default to 10bps.
+
+    Returns:
+        np.ndarray: Equal risk contribution portfolio.
+    """
+    cov_matrix = _validate_covariance_matrix(
+        covariance,
+        name="covariance",
+        require_positive_definite=False,
+        positive_definite_message=(
+            "covariance must be positive definite (symmetric with positive eigenvalues)"
+        ),
+    )
+
+    covariance = np.asarray(cov_matrix, dtype=float)
+
+    if covariance.ndim != 2 or covariance.shape[0] != covariance.shape[1]:
+        raise ValueError("covariance must be square")
+
+    if not np.all(np.isfinite(covariance)):
+        raise ValueError("covariance contains NaN or Inf")
+
+    n = covariance.shape[0]
+
+    # Initial solution: inverse-volatility (close to ERC, better than equal-weight)
+    if initial_solution is None:
+        vol = np.sqrt(np.diag(covariance))
+        if np.any(vol == 0):
+            raise ValueError("Zero volatility asset")
+        w0 = 1.0 / vol
+        w0 /= w0.sum()
+    else:
+        w0 = np.asarray(initial_solution, dtype=float).reshape(-1)
+        if w0.shape[0] != n:
+            raise ValueError("initial_solution size mismatch")
+        if not np.all(np.isfinite(w0)):
+            raise ValueError("initial_solution contains NaN/Inf")
+        w0 = w0 / np.sum(w0)
+
+    constraints = {"type": "eq", "fun": lambda w: np.sum(w) - 1}
+    bounds = [(0.0, 1.0)] * n
+
+    if options is None:
+        options = {"maxiter": 1000, "ftol": 1e-12, "disp": False}
+    elif not isinstance(options, dict):
+        raise ValueError("options must be a dictionary")
+
+    result = minimize(
+        erc_objective_function,
+        w0,
+        args=(covariance,),
+        method="SLSQP",
+        bounds=bounds,
+        constraints=constraints,
+        options=options,
+    )
+
+    if not result.success:
+        raise ValueError(f"ERC optimization failed: {result.message}")
+
+    w = result.x
+
+    # Check ERC condition: PCR = RC / port_var, normalized so they sum to 1
+    if not ignore_objective:
+        rc = risk_contribution(w, covariance).reshape(-1)
+        pcr = rc / rc.sum()  # normalized by port_var, order ~1/N
+
+        if np.max(pcr) - np.min(pcr) > pcr_tolerance:
+            warnings.warn(
+                f"ERC condition not satisfied: "
+                f"max {np.max(pcr):.6f}, min {np.min(pcr):.6f}, "
+                f"tol {pcr_tolerance:.6f}",
+                RuntimeWarning,
+            )
+
+    return w

@@ -2,7 +2,7 @@
 
 ## About me
 MSc Mathematical Engineering student at Politecnico di Milano with a background in applied mathematics at Centrale Nantes.  
-Interested in derivatives pricing, stochastic modelling, and numerical methods.
+Interested in **quantitative research**, **stochastic modelling**, and **numerical methods**.  
 
 ## Projects
 
